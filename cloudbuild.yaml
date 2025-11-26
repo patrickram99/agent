@@ -1,0 +1,73 @@
+# Cloud Build configuration for automatic deployment to Cloud Run
+# Trigger this from GitHub/Cloud Source Repositories or manually with:
+# gcloud builds submit --config cloudbuild.yaml
+
+steps:
+  # Build the Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/${PROJECT_ID}/whatsapp-finance-agent:${COMMIT_SHA}'
+      - '-t'
+      - 'gcr.io/${PROJECT_ID}/whatsapp-finance-agent:latest'
+      - '.'
+
+  # Push to Google Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/${PROJECT_ID}/whatsapp-finance-agent:${COMMIT_SHA}'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/${PROJECT_ID}/whatsapp-finance-agent:latest'
+
+  # Deploy to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'whatsapp-finance-agent'
+      - '--image'
+      - 'gcr.io/${PROJECT_ID}/whatsapp-finance-agent:${COMMIT_SHA}'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'  # Required for webhook to receive requests
+      - '--memory'
+      - '512Mi'
+      - '--cpu'
+      - '1'
+      - '--min-instances'
+      - '0'
+      - '--max-instances'
+      - '10'
+      - '--timeout'
+      - '300s'
+      - '--set-env-vars'
+      - 'USE_GEMINI=${_USE_GEMINI},GEMINI_MODEL=${_GEMINI_MODEL},TIMEZONE=${_TIMEZONE},OTP_TTL_MINUTES=${_OTP_TTL_MINUTES},EVOLUTION_BASE_URL=${_EVOLUTION_BASE_URL},INSTANCE_ID=${_INSTANCE_ID}'
+      - '--set-secrets'
+      - 'DATABASE_URL=DATABASE_URL:latest,GEMINI_API_KEY=GEMINI_API_KEY:latest,EVOLUTION_API_KEY=EVOLUTION_API_KEY:latest'
+
+# Images to push to Container Registry
+images:
+  - 'gcr.io/${PROJECT_ID}/whatsapp-finance-agent:${COMMIT_SHA}'
+  - 'gcr.io/${PROJECT_ID}/whatsapp-finance-agent:latest'
+
+# Substitution variables (can be overridden)
+substitutions:
+  _REGION: 'us-central1'
+  _USE_GEMINI: 'true'
+  _GEMINI_MODEL: 'gemini-1.5-flash'
+  _TIMEZONE: 'America/Lima'
+  _OTP_TTL_MINUTES: '5'
+  _EVOLUTION_BASE_URL: 'http://34.121.145.34:8080'
+  _INSTANCE_ID: 'ConstruccionSOftware'
+
+# Build options
+options:
+  logging: CLOUD_LOGGING_ONLY
