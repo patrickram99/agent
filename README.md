@@ -7,6 +7,72 @@ Permite:
 - Solicitar un código OTP (6 dígitos) para autenticación en la web.
 - Endpoint de verificación de OTP para la web.
 
+---
+
+## 🚀 Ejecución Local (Desarrollo)
+
+### 1. Clonar el repositorio
+```bash
+git clone https://github.com/patrickram99/agent.git
+cd agent
+```
+
+### 2. Crear entorno virtual
+```bash
+python -m venv .venv
+source .venv/bin/activate  # Linux/Mac
+# o en Windows: .venv\Scripts\activate
+```
+
+### 3. Instalar dependencias
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Configurar variables de entorno
+Crea un archivo `.env` en la raíz del proyecto:
+```env
+DATABASE_URL=postgresql://usuario:contraseña@host:5432/nombre_db
+GEMINI_API_KEY=tu_api_key_de_gemini
+EVOLUTION_API_KEY=tu_api_key_de_evolution
+EVOLUTION_BASE_URL=http://34.121.145.34:8080
+INSTANCE_ID=ConstruccionSOftware
+TIMEZONE=America/Lima
+```
+
+### 5. Iniciar el servidor
+```bash
+python langchain_agent.py
+```
+El servidor se iniciará en `http://localhost:8000`
+
+### 6. Exponer con ngrok (para recibir webhooks de WhatsApp)
+En otra terminal:
+```bash
+ngrok http 8000
+```
+Esto te dará una URL pública como `https://xxxx.ngrok-free.dev`
+
+### 7. Configurar webhook en Evolution
+Ve a `http://34.121.145.34:8080/manager/` y configura el webhook URL:
+```
+https://xxxx.ngrok-free.dev/webhook
+```
+
+### 8. Probar el endpoint OTP (opcional)
+```bash
+curl -X POST https://xxxx.ngrok-free.dev/otp/send \
+  -H "Content-Type: application/json" \
+  -d '{"phone_number": "51952401737"}'
+```
+
+### 9. Modo CLI para testing (sin WhatsApp)
+```bash
+python langchain_agent.py chat
+```
+
+---
+
 ## Variables de entorno
 
 - `EVOLUTION_BASE_URL` (default: `http://34.121.145.34:8080`)
